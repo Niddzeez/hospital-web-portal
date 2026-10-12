@@ -1,0 +1,11 @@
+import { useState, type ChangeEvent, type FormEvent } from 'react';
+import { X } from 'lucide-react';
+import { api, type Hospital } from '../services/apiClient';
+
+type Props = { hospital: Hospital | null; onClose: () => void };
+export function InviteModal({ hospital, onClose }: Props) {
+  const [form, setForm] = useState({ name: '', email: '', mrn: '' }); const [result, setResult] = useState<{ token: string; expiresAt: string } | null>(null); const [error, setError] = useState(''); const [busy, setBusy] = useState(false);
+  function change(event: ChangeEvent<HTMLInputElement>) { setForm({ ...form, [event.target.name]: event.target.value }); }
+  async function submit(event: FormEvent) { event.preventDefault(); if (!hospital) return; setBusy(true); setError(''); try { const data = await api.invite(hospital._id, { ...form, role: 'patient' }); setResult(data); } catch (err) { setError(err instanceof Error ? err.message : 'Unable to create invitation'); } finally { setBusy(false); } }
+  return <div className="modal-backdrop"><section className="modal-card"><div className="modal-heading"><div><p className="eyebrow">{hospital?.name || 'Hospital'}</p><h2>{result ? 'Invitation created' : 'Invite a patient'}</h2></div><button className="icon-button" onClick={onClose}><X size={19}/></button></div>{result ? <><p className="muted">Share this one-time invitation token securely with the patient.</p><div className="invite-token">{result.token}</div><p className="muted small">Expires {new Date(result.expiresAt).toLocaleString()}</p><button className="primary-button" onClick={onClose}>Done</button></> : <form className="invite-form" onSubmit={submit}><label>Patient name<input name="name" value={form.name} onChange={change} required/></label><label>Email<input type="email" name="email" value={form.email} onChange={change} required/></label><label>Hospital MRN<input name="mrn" value={form.mrn} onChange={change} required placeholder="e.g. AIIMS-00042"/></label>{error&&<p className="form-error">{error}</p>}<div className="modal-actions"><button type="button" className="secondary-button" onClick={onClose}>Cancel</button><button className="primary-button" disabled={busy}>{busy?'Creating…':'Create invitation'}</button></div></form>}</section></div>;
+}
